@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Skender.Stock.Indicators" Version="2.7.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CryptoFuturesBacktester\src\CryptoFuturesBacktester.Application\CryptoFuturesBacktester.Application.csproj" />
+    <ProjectReference Include="..\CryptoFuturesBacktester\src\CryptoFuturesBacktester.Core\CryptoFuturesBacktester.Core.csproj" />
+    <ProjectReference Include="..\CryptoFuturesBacktester\src\CryptoFuturesBacktester.Infrastructure\CryptoFuturesBacktester.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

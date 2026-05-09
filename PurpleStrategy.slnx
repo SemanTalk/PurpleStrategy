@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="../CryptoFuturesBacktester/src/CryptoFuturesBacktester.Application/CryptoFuturesBacktester.Application.csproj" />
+  <Project Path="../CryptoFuturesBacktester/src/CryptoFuturesBacktester.Core/CryptoFuturesBacktester.Core.csproj" />
+  <Project Path="../CryptoFuturesBacktester/src/CryptoFuturesBacktester.Infrastructure/CryptoFuturesBacktester.Infrastructure.csproj" />
+  <Project Path="PurpleStrategy.csproj" />
+</Solution>
