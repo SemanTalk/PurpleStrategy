@@ -80,7 +80,7 @@ namespace PurpleStrategy.Sigmoid
         // 최소 볼린저밴드 폭(Bollinger Band Width) 임계값.
         // 시장의 변동성(Volatility)이 너무 작으면 진입을 자제하는 최소한의 기준입니다. (변동성이 낮으면 추세 신뢰도 하락)
         // 0~100 범위에서 실전에서는 10~30 근방이 적당해 보임 (값이 클수록 변동성 필터 완화, 10은 매우 엄격한 필터, 30은 완화된 필터)
-        public double BBWMinThreshold { get; init; } = 18;
+        public double BBWMinThreshold { get; init; } = 20;
 
         // 한 봉에서 늘릴 수 있는 최대 비중 변화량.
         // 진입/증량 속도를 제한해 갑작스러운 포지션 확대를 막는다.

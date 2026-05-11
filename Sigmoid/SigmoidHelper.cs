@@ -1,9 +1,5 @@
-﻿using PurpleStrategy.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CryptoFuturesBacktester.Core.Quotes;
+using PurpleStrategy.Models;
 
 namespace PurpleStrategy.Sigmoid
 {
@@ -18,7 +14,7 @@ namespace PurpleStrategy.Sigmoid
         /// htfMetrics가 있으면 HTF의 Trend/EMA/BBW만으로 방향을 정하고, 0을 반환하여 전략을 중지한다..
         /// 반환값: 1=Long, -1=Short, 0=None.
         /// </summary>
-        public static int CalcDir1(PurpleMetrics ltf, PurpleMetrics? htf, SigmoidParams Params, double finalScore)
+        public static int CalcDir1(PurpleMetrics ltf, PurpleMetrics? htf, SigmoidParams Params, double finalScore, FuturesQuote? liveHtfQuote)
         {
             // Long Positive
             // 1. htf.SPb > htf.SMb
@@ -27,18 +23,24 @@ namespace PurpleStrategy.Sigmoid
             int dir = 0;
             if (htf == null)
             {
-                if (ltf.BBW < Params.BBWMinThreshold) { dir = 0; }
-                else if (ltf.Trend > Params.MinTrendMagnitude) { dir = 1; }
-                else if (ltf.Trend < -Params.MinTrendMagnitude) { dir = -1; }
                 return dir;
             }
 
-            //bool ltfOverBuy = ltf.SMb > 0.8 && ltf.SPb > 0.8;
-            //bool ltfOverSell = ltf.SMb < 0.2 && ltf.SPb < 0.2;
-
             if (htf.BBW < Params.BBWMinThreshold) { dir = 0; }
-            else if (htf.Trend > Params.MinTrendMagnitude) { dir = 1; }
-            else if (htf.Trend < -Params.MinTrendMagnitude ) { dir = -1; }
+            else if (htf.Trend > Params.MinTrendMagnitude)
+            {
+                if (htf.SPb > htf.SMb)
+                {
+                    dir = 1;
+                }
+            }
+            else if (htf.Trend < Params.MinTrendMagnitude)
+            {
+                if (htf.SPb < htf.SMb)
+                {
+                    dir = -1;
+                }
+            }
 
             return dir;
         }

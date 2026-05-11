@@ -41,6 +41,8 @@ namespace PurpleStrategy.Utils
         /// </summary>
         public static int mBasePeriod = 28;
 
+        public static int mMfiBolingerBandPeriod = mBasePeriod * 2;
+
         public static double mStdv = 2.0;
         public static int mAtrPeriod = mBasePeriod / 2;
         public static int mMfiPeriod = mBasePeriod / 2;
@@ -52,8 +54,10 @@ namespace PurpleStrategy.Utils
         public static int mMacdSignalPeriod = mBasePeriod / 4;
 
         public static int mVolEmaPeriod = mBasePeriod * 4;
-        public static int mRegressionLookback = mBasePeriod * 4;
+
         public static int mBaseLookback = 120;
+        public static int mLtfLRgressionLookback = mBasePeriod;
+        public static int mHtfLRgressionLookback = mBasePeriod * 2;
 
         /// <summary>
         /// 퍼플 지표(수정된 %B 및 MACD 결합 알고리즘)를 계산하고 차트에 렌더링합니다.
@@ -99,7 +103,7 @@ namespace PurpleStrategy.Utils
                     .Select(x => new Quote { Date = x.Date, Close = (decimal)x.Mfi!.Value })
                     .ToList();
 
-                var mfiBbResults = mfiQuotes.GetBollingerBands(mBasePeriod, mStdv);
+                var mfiBbResults = mfiQuotes.GetBollingerBands(mMfiBolingerBandPeriod, mStdv);
                 var percentMQuotes = mfiBbResults
                     .Where(x => x.PercentB.HasValue)
                     .Select(x => new Quote { Date = x.Date, Close = (decimal)x.PercentB!.Value })

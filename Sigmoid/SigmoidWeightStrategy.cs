@@ -6,7 +6,6 @@ using PurpleStrategy.Sigmoid;
 using PurpleStrategy.Utils;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace UserStrategy;
@@ -83,7 +82,7 @@ public sealed class SigmoidWeightStrategy : IParametrizedStrategy, IChartableStr
 
     public IReadOnlyList<StrategyParameter> GetParameters() =>
     [
-        //신호 파라미터
+         //신호 파라미터
 
         new("ConfirmFullScale","ConfirmFullScale",       StrategyParamType.Decimal,  _pConfirmFullScale,  1m, 25m, 5m, 0),
         new("HeatFullScale","HeatFullScale",       StrategyParamType.Decimal,  _pHeatFullScale,  1m, 35m,   5m, 0),
@@ -106,7 +105,7 @@ public sealed class SigmoidWeightStrategy : IParametrizedStrategy, IChartableStr
         new("ExitSpeedMultiplier","ExitSpeedMultiplier",       StrategyParamType.Decimal,  _pExitSpeedMultiplier,  1m, 100m, 10m, 0),
         new("MaxWeight",   "MaxWeight",        StrategyParamType.Decimal, _pMaxWeight, 0.1m, 0.5m,  0.1m, 1),
         new("SlMultiplier","SL Multiplier (ATR×)", StrategyParamType.Decimal, _pSlMultiplier, 0m, 5m, 1m, 0),
-        new("TpMultiplier","TP Multiplier (ATR×)", StrategyParamType.Decimal, _pTpMultiplier, 0m, 10m, 2m, 0),
+        new("TpMultiplier","TP Multiplier (ATR×)", StrategyParamType.Decimal, _pTpMultiplier, 0m, 10m, 2m, 0)
     ];
 
     public void SetParameters(IReadOnlyDictionary<string, decimal> values)
@@ -185,7 +184,7 @@ public sealed class SigmoidWeightStrategy : IParametrizedStrategy, IChartableStr
         if (_ctx.QuoteHistory.Count < 4) return;
 
         var ltfLookup = PurpleMetricsUtils.IndicatorLookup.BuildIndicatorLookup(_ltfBollingerBandsPlotCache!, _ltfDualEmaPlotCache!, _ltfVolPlotCache!, _ltfPurpleIndicatorPlotCache!);
-        _ltfMetricsList = PurpleMetricsUtils.IndicatorLookup.BuildMetricsList(_ctx.QuoteHistory, ltfLookup, SkenderUtils.mRegressionLookback);
+        _ltfMetricsList = PurpleMetricsUtils.IndicatorLookup.BuildMetricsList(_ctx.QuoteHistory, ltfLookup, SkenderUtils.mLtfLRgressionLookback);
         if (_ltfMetricsList is not null)
         {
             // ToDictionary 대신 last-write-wins — REST 워밍업 데이터에 중복 타임스탬프가 있어도 안전
@@ -211,7 +210,7 @@ public sealed class SigmoidWeightStrategy : IParametrizedStrategy, IChartableStr
         if (_ctx.HtfQuoteHistory.Count < 4) return;
 
         var htfLookup = PurpleMetricsUtils.IndicatorLookup.BuildIndicatorLookup(_htfBollingerBandsPlotCache, _htfDualEmaPlotCache, _htfVolPlotCache, _htfPurpleIndicatorPlotCache);
-        _htfMetricsList = PurpleMetricsUtils.IndicatorLookup.BuildMetricsList(_ctx.HtfQuoteHistory, htfLookup, SkenderUtils.mRegressionLookback);
+        _htfMetricsList = PurpleMetricsUtils.IndicatorLookup.BuildMetricsList(_ctx.HtfQuoteHistory, htfLookup, SkenderUtils.mHtfLRgressionLookback);
         if (_htfMetricsList is not null)
         {
             // ToDictionary 대신 last-write-wins — REST 워밍업 데이터에 중복 타임스탬프가 있어도 안전
@@ -293,11 +292,10 @@ public sealed class SigmoidWeightStrategy : IParametrizedStrategy, IChartableStr
 
         if (_ltfMap is null || !_ltfMap.TryGetValue(quote.Date, out var ltfMetric))
         {
-            _lastDebugMsg = $"[Skip #{i}] _ltfMap 날짜 미일치: bar={quote.Date:HH:mm:ss} | mapSize={_ltfMap?.Count} | last={_ltfMetricsList.LastOrDefault()?.Date:HH:mm:ss}";
+            _lastDebugMsg = $"[Skip #{i}] _ltfMap 날짜 미일치: bar={quote.Date:HH:mm:ss} UTC | mapSize={_ltfMap?.Count} | last={_ltfMetricsList.LastOrDefault()?.Date:HH:mm:ss}";
             _prevEquity = bar.AccountEquity;
             return;
         }
-
         _lastHtfDebugMsg = BuildHtfDebugMessage(bar, ltfMetric, htfMetric);
 
         // Manager는 이전 봉 종료 시점 equity로 OnBarClose를 호출함.
@@ -452,9 +450,7 @@ public sealed class SigmoidWeightStrategy : IParametrizedStrategy, IChartableStr
         new("BBL("+SkenderUtils.mBasePeriod+","+SkenderUtils.mStdv+")",
             _ltfBollingerBandsPlotCache?.mBollingerBandsResults?.Select(b => b.LowerBand.HasValue ? (double)b.LowerBand.Value : double.NaN).ToArray() ?? [],2.0F,
             System.Drawing.Color.SteelBlue),
-        new("EMA("+SkenderUtils.mShortEmaPeriod+")",
-            _ltfDualEmaPlotCache?.mShortEmaResults?.Select(e => e.Ema.HasValue ? (double)e.Ema.Value : double.NaN).ToArray() ?? [],1.5F,
-            System.Drawing.Color.PaleGreen),
+
     ];
 
     // ── ILoggableStrategy ────────────────────────────────────────────

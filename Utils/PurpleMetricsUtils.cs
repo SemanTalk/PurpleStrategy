@@ -127,7 +127,7 @@ namespace PurpleStrategy.Utils
                         .Where(x => x.Mfi.HasValue)
                         .Select(x => new Quote { Date = x.Date, Close = (decimal)x.Mfi!.Value })
                         .ToList();
-                    var percentMQuotes = mfiQuotes.GetBollingerBands(SkenderUtils.mBasePeriod, SkenderUtils.mStdv)
+                    var percentMQuotes = mfiQuotes.GetBollingerBands(SkenderUtils.mMfiBolingerBandPeriod, SkenderUtils.mStdv)
                         .Where(x => x.PercentB.HasValue)
                         .Select(x => new Quote { Date = x.Date, Close = (decimal)x.PercentB!.Value })
                         .ToList();

@@ -101,21 +101,12 @@ namespace PurpleStrategy.Sigmoid
         // ══════════════════════════════════════════════════════════════════
 
         public OrderInstruction OnBarClose(
-            PurpleMetrics ltf,
-            PurpleMetrics? htf,
-            decimal balance,
-            double leverage = 1,
-            FuturesQuote? liveHtfFuturesQuote = null)
+             PurpleMetrics ltf,
+             PurpleMetrics? htf,
+             decimal balance,
+             double leverage = 1,
+             FuturesQuote? liveHtfQuote = null)
         {
-            /*
-            // 현재 LTF 종가가 진행 중인 HTF 봉의 범위 내에 있는지
-            bool insideHtfRange = bar.Quote.Close >= liveHtf.Low
-                               && bar.Quote.Close <= liveHtf.High;
-
-            // 진행 중인 HTF 봉이 완성봉 고점을 돌파하는지 (실시간 판단)
-            bool breakingOut = liveHtf.High > completedHtf.High;
-            */
-
             // 1) MDD 방어 모드 갱신
             // peakBalance는 관측된 최고 balance이고, currentDD는 최고점 대비 현재 낙폭이다.
             // 방어 모드에서는 신규 목표 비중 상한을 MaxWeight가 아니라 MddDefenseMaxWeight로 낮춘다.
@@ -140,7 +131,7 @@ namespace PurpleStrategy.Sigmoid
 
             // 3) 방향 산출
             // dir: 1=Long, -1=Short, 0=방향 없음. HTF가 있으면 HTF 기준으로 방향을 정한다.
-            int dir = SigmoidHelper.CalcDir1(ltf, htf, Params, finalScore);
+            int dir = SigmoidHelper.CalcDir1(ltf, htf, Params, finalScore, liveHtfQuote);
 
             // 4) HTF 반전 차단
             // HTF 자체가 현재 보유 방향(_heldDir)에 대해 강한 반전 조짐을 보이면 이번 봉 방향을 없앤다.
