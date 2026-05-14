@@ -46,6 +46,13 @@ namespace PurpleStrategy.Sigmoid
         // 0~100 범위에서 15~30 근방이 적당.
         public double BBWMinThreshold { get; init; } = 20;
 
+        // [2026-05-14 #38 H1] 변동성 포화 gate. PurpleMetrics.BBW ≥ 이 값이면:
+        //   (1) entry 차단 (_currentWeight ≤ 0.001 일 때 dir = 0 → directFlip 도 자동 차단)
+        //   (2) increase 차단 (targetWeight > _currentWeight 일 때 cap)
+        //   감량/청산은 정상 동작. BBW 0~100 정규화 (120봉 max 대비 %), 80 = 변동성 상위 20%.
+        //   본 사이클 박제값 (sweep 금지, sub-test 70 변형은 liveness/rank 확인 전용).
+        public double BBWMaxThreshold { get; init; } = 80;
+
         // 한 봉당 늘릴 수 있는 최대 비중 변화량.
         // 0.001~0.01 범위에서 0.003 근방이 적당 (한 봉당 0.3% 변화 허용).
         public double MaxWeightChangePerBar { get; init; } = 0.003;

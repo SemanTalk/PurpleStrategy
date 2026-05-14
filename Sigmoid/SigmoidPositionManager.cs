@@ -16,6 +16,10 @@ namespace PurpleStrategy.Sigmoid
         private int _heldDir = 0;
         private string _currentSide = "None";
 
+        // [2026-05-14 #38 H1] BBW 포화 gate (entry 차단 + increase cap) 발화 누적 카운터.
+        // Phase 1 (d) gate liveness 측정용 — 0 이면 gate 가 한 번도 활성화 안 됨 = 임계값 부적절.
+        public int BBWGateTriggerCount { get; private set; }
+
         // ── 읽기 전용 접근자
         public double CurrentWeight => _currentWeight;
         public string CurrentSide => _currentSide;
@@ -84,6 +88,16 @@ namespace PurpleStrategy.Sigmoid
             double strength = signal.Strength;
             double trendForLog = htf?.Trend ?? ltf.Trend;
 
+            // [2026-05-14 #38 H1] BBW 포화 gate — htf null guard 후 1회 계산하여 두 위치에서 재사용.
+            // Gate 1 (entry 차단): 진입 시점 (_currentWeight ≤ 0.001) 에 dir=0 으로 만들어 directFlip 도 자동 차단.
+            // Gate 2 (increase 차단): targetWeight 산출 후 (line 137 이후) increase 일 때만 cap.
+            bool bbwSaturated = htf is not null && htf.BBW >= Params.BBWMaxThreshold;
+            if (bbwSaturated && _currentWeight <= 0.001 && dir != 0)
+            {
+                dir = 0;
+                BBWGateTriggerCount++;
+            }
+
             string desiredSide = dir > 0 ? OrderSide.Long : dir < 0 ? OrderSide.Short : OrderSide.None;
             bool directFlip = dir != 0 && dir != _heldDir && _heldDir != 0;
 
@@ -135,6 +149,13 @@ namespace PurpleStrategy.Sigmoid
             // dir=0 이면 즉시 0 (휴식).
             double sig = SigmoidHelper.Sigmoid(strength * Params.Steepness);
             double targetWeight = dir == 0 ? 0 : activeMaxWeight * Math.Max(0.0, (sig - 0.5) * 2.0);
+
+            // [2026-05-14 #38 H1] Gate 2: BBW 포화 시 증량 차단 (감량/청산은 정상 동작).
+            if (bbwSaturated && targetWeight > _currentWeight)
+            {
+                targetWeight = _currentWeight;
+                BBWGateTriggerCount++;
+            }
 
             // 5) 한 봉당 비중 변화 제한
             double delta = targetWeight - _currentWeight;
@@ -221,6 +242,7 @@ namespace PurpleStrategy.Sigmoid
             _currentSide = "None";
             _peakBalance = 0;
             _inDefenseMode = false;
+            BBWGateTriggerCount = 0;
         }
 
         /// <summary>

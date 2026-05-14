@@ -27,6 +27,7 @@ public sealed class SigmoidWeightStrategy : IParametrizedStrategy, IChartableStr
     private decimal _pMinTrendMagnitude = 0.0005m;
     private decimal _pMinRSquared = 0.5m;
     private decimal _pBBWMinThreshold = 20m;
+    private decimal _pBBWMaxThreshold = 80m;
     private decimal _pMddDefenseThreshold = 0.15m;
     private decimal _pMddDefenseMaxWeight = 0.10m;
     private decimal _pMddDefenseExitThreshold = 0.05m;
@@ -45,6 +46,7 @@ public sealed class SigmoidWeightStrategy : IParametrizedStrategy, IChartableStr
         new("MinTrendMagnitude",    "MinTrendMagnitude (LR |Slope/Close| min)",     StrategyParamType.Decimal,  _pMinTrendMagnitude,  0.0m,  0.005m,   0.0005m, 4),
         new("MinRSquared",    "MinRSquared (LR confidence gate)",     StrategyParamType.Decimal,  _pMinRSquared,  0.0m,  1.0m,   0.05m, 2),
         new("BBWMinThreshold",    "BBWMinThreshold",     StrategyParamType.Decimal,  _pBBWMinThreshold,  15m,  30m,   1m, 0),
+        new("BBWMaxThreshold",    "BBWMaxThreshold (BBW saturation gate)",     StrategyParamType.Decimal,  _pBBWMaxThreshold,  50m,  100m,   5m, 0),
         new("Leverage",    "Leverage",           StrategyParamType.Decimal,  _pLeverage,  1m, 10m, 2m, 0),
         new("MddDefenseThreshold", "MddDefenseThreshold", StrategyParamType.Decimal, _pMddDefenseThreshold, 0.0m, 1.0m, 0.5m, 1),
         new("MddDefenseMaxWeight", "MddDefenseMaxWeight", StrategyParamType.Decimal, _pMddDefenseMaxWeight, 0.0m, 1.0m, 0.5m, 1),
@@ -65,6 +67,7 @@ public sealed class SigmoidWeightStrategy : IParametrizedStrategy, IChartableStr
         if (values.TryGetValue("MinRSquared", out v)) _pMinRSquared = v;
         if (values.TryGetValue("MaxWeightChangePerBar", out v)) _pMaxWeightChangePerBar = v;
         if (values.TryGetValue("BBWMinThreshold", out v)) _pBBWMinThreshold = v;
+        if (values.TryGetValue("BBWMaxThreshold", out v)) _pBBWMaxThreshold = v;
 
         if (values.TryGetValue("MddDefenseThreshold", out v)) _pMddDefenseThreshold = v;
         if (values.TryGetValue("MddDefenseMaxWeight", out v)) _pMddDefenseMaxWeight = v;
@@ -94,6 +97,7 @@ public sealed class SigmoidWeightStrategy : IParametrizedStrategy, IChartableStr
             MinRSquared = (double)_pMinRSquared,
             MaxWeightChangePerBar = (double)_pMaxWeightChangePerBar,
             BBWMinThreshold = (double)_pBBWMinThreshold,
+            BBWMaxThreshold = (double)_pBBWMaxThreshold,
             MddDefenseThreshold = (double)_pMddDefenseThreshold,
             MddDefenseMaxWeight = (double)_pMddDefenseMaxWeight,
             MddDefenseExitThreshold = (double)_pMddDefenseExitThreshold,
@@ -154,7 +158,8 @@ public sealed class SigmoidWeightStrategy : IParametrizedStrategy, IChartableStr
             $"  {actionTag,-22}  {instr.Side,-5}  " +
             $"W:{prevWeight:F3}→{instr.CurrentWeight:F3}(Δ{instr.WeightDelta:+0.000;-0.000;0.000})  " +
             $"Trend:{instr.Trend:+0.0000;-0.0000;0.0000}  Str:{instr.Strength:F2}  " +
-            $"MaxW:{instr.MaxWeight:P0}  Defense:{defense}");
+            $"MaxW:{instr.MaxWeight:P0}  Defense:{defense}  " +
+            $"BBWGate:{_runner.Manager?.BBWGateTriggerCount ?? 0}");
 
         if (_runner.LastMetrics is { } m)
         {
