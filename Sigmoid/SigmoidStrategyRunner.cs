@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
 using System.Linq;
 using CryptoFuturesBacktester.Core.Contracts;
 using CryptoFuturesBacktester.Core.Enums;
@@ -35,17 +33,6 @@ public sealed class SigmoidStrategyRunner
     // ── Trading state
     private PositionSide? _activeSide;
     private decimal _prevEquity;
-
-    // === LTF Probe (Plan B 진단용 — 분석 후 블록 단위 제거) ==============
-    // [2026-05-14] LR axis swap — htf_lr_slope (Slope/Close, 정규화) + htf_lr_r2 추가.
-    private record LtfProbeSnap(
-        DateTime EntryDate, PositionSide Side, decimal EntryPrice, decimal EntryQty,
-        double LtfBBW, double LtfEmaSpread, double LtfVolRatio, int LtfTrendSign,
-        double HtfTrend, int HtfTrendSign, double HtfLrSlope, double HtfLrR2, double Strength);
-    private LtfProbeSnap? _probeSnap;
-    private string? _probePath;
-    private bool _probeInit;
-    // ====================================================================
 
     // ── Config
     public decimal Leverage { get; set; } = 10m;
@@ -156,7 +143,6 @@ public sealed class SigmoidStrategyRunner
         // 엔진 자동 청산 (SL/TP/청산가/MaxDD) 후 manager 동기화
         if (_activeSide.HasValue && !_ctx.Positions.HasPosition(symbol, _activeSide.Value))
         {
-            ProbeOnClose(bar, price);
             _manager.SyncPosition("None", 0);
             _activeSide = null;
         }
@@ -206,14 +192,7 @@ public sealed class SigmoidStrategyRunner
         LastInstr = instr;
         LastMetrics = ltfMetric;
 
-        var sideBeforeExec = _activeSide;
         ExecuteInstruction(symbol, price, equity, instr);
-
-        // === LTF Probe — manager-driven state transitions ===
-        if (sideBeforeExec is null && _activeSide.HasValue)
-            ProbeOnEntry(bar, ltfMetric, htfMetric, instr, _activeSide.Value, symbol);
-        else if (sideBeforeExec.HasValue && _activeSide is null)
-            ProbeOnClose(bar, price);
 
         _prevEquity = bar.AccountEquity;
         return instr;
@@ -340,65 +319,4 @@ public sealed class SigmoidStrategyRunner
         _ => int.TryParse(interval, out var minutes) && minutes > 0 ? minutes : 60,
     };
 
-    // === LTF Probe helpers (Plan B 진단용 — 분석 후 블록 단위 제거) ======
-
-    private void EnsureProbe()
-    {
-        if (_probeInit) return;
-        _probeInit = true;
-        var dir = Path.Combine(AppContext.BaseDirectory, "reports");
-        Directory.CreateDirectory(dir);
-        _probePath = Path.Combine(dir, $"ltf_probe_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-        File.WriteAllText(_probePath,
-            "entry_date,close_date,side,entry_price,close_price,realized_pnl," +
-            "ltf_bbw,ltf_ema_spread,ltf_vol_ratio,ltf_trend_sign," +
-            "htf_trend,htf_trend_sign,htf_lr_slope,htf_lr_r2,strength\n");
-    }
-
-    private void ProbeOnEntry(
-        BarContext bar, PurpleMetrics ltf, PurpleMetrics? htf,
-        SigmoidPositionManager.OrderInstruction instr, PositionSide side, string symbol)
-    {
-        EnsureProbe();
-        var pos = _ctx?.Positions.GetPosition(symbol, side);
-        if (pos is null) return;
-        double emaSpread = ltf.Close != 0 ? (ltf.ShortEma - ltf.LongEma) / (double)ltf.Close : 0;
-        double volRatio = ltf.VolEma > 0 ? (double)ltf.Volume / ltf.VolEma : 0;
-        double htfLrSlope = (htf is not null && htf.Close > 0)
-            ? htf.LRResult.Slope / (double)htf.Close : 0;
-        double htfLrR2 = htf?.LRResult.RSquared ?? 0;
-        _probeSnap = new LtfProbeSnap(
-            bar.Quote.Date, side, pos.EntryPrice, pos.Quantity,
-            ltf.BBW, emaSpread, volRatio, Math.Sign(ltf.Trend),
-            htf?.Trend ?? 0, htf is null ? 0 : Math.Sign(htf.Trend),
-            htfLrSlope, htfLrR2,
-            instr.Strength);
-    }
-
-    private void ProbeOnClose(BarContext bar, decimal closePrice)
-    {
-        if (_probeSnap is null || _probePath is null) return;
-        var s = _probeSnap;
-        var sideMul = s.Side == PositionSide.Long ? 1m : -1m;
-        var realized = (closePrice - s.EntryPrice) * s.EntryQty * sideMul;
-        var inv = CultureInfo.InvariantCulture;
-        File.AppendAllText(_probePath, string.Join(",",
-            s.EntryDate.ToString("yyyy-MM-dd HH:mm:ss", inv),
-            bar.Quote.Date.ToString("yyyy-MM-dd HH:mm:ss", inv),
-            s.Side,
-            s.EntryPrice.ToString(inv),
-            closePrice.ToString(inv),
-            realized.ToString("F4", inv),
-            s.LtfBBW.ToString("F4", inv),
-            s.LtfEmaSpread.ToString("F6", inv),
-            s.LtfVolRatio.ToString("F4", inv),
-            s.LtfTrendSign.ToString(inv),
-            s.HtfTrend.ToString("F6", inv),
-            s.HtfTrendSign.ToString(inv),
-            s.HtfLrSlope.ToString("F8", inv),
-            s.HtfLrR2.ToString("F4", inv),
-            s.Strength.ToString("F4", inv)) + "\n");
-        _probeSnap = null;
-    }
-    // ====================================================================
 }
